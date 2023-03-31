@@ -1,24 +1,24 @@
 with daily_revenue as 
 (
-SELECT  creation_time::date as date,
+select  creation_time::date as date,
         sum(price) as revenue
-FROM    (
-        SELECT  order_id,
+from    (
+        select  order_id,
                 creation_time,
                 unnest(product_ids) as product_id
-        FROM    orders
-        WHERE   order_id not in (SELECT order_id FROM user_actions WHERE action = 'cancel_order')
-        ) as a LEFT JOIN 
+        from    orders
+        where   order_id not in (select order_id from user_actions where action = 'cancel_order')
+        ) as a left join 
         (
-        SELECT  product_id,
+        select  product_id,
                 price
-        FROM    products
+        from    products
         ) as b using (product_id)
-GROUP BY date
+group by date
 )
-SELECT  date,
+select  date,
         revenue,
-        sum(revenue) OVER(ORDER BY date) as total_revenue,
-        round(((revenue::decimal / lag(revenue) OVER(ORDER BY date)) - 1) * 100, 2) as revenue_change
-FROM    daily_revenue
-ORDER BY date
+        sum(revenue) over (order by date) as total_revenue,
+        round(((revenue::decimal / lag(revenue) over (order by date)) - 1) * 100, 2) as revenue_change
+from    daily_revenue
+order by date

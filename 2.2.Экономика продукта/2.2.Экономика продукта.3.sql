@@ -1,46 +1,46 @@
-SELECT  date,
+select  date,
         round(revenue :: decimal / users, 2) running_arpu,
         round(revenue :: decimal / paying_users, 2) running_arppu,
         round(revenue :: decimal / orders, 2) running_aov
-FROM    (
-        SELECT  date,
-                sum(count(user_id)) OVER (ORDER BY date rows between unbounded preceding and current row) users
-        FROM    (
-                SELECT  min(time :: date) as date,
+from    (
+        select  date,
+                sum(count(user_id)) over (order by date rows between unbounded preceding and current row) users
+        from    (
+                select  min(time :: date) as date,
                         user_id
-                FROM    user_actions
-                GROUP BY user_id
+                from    user_actions
+                group by user_id
                 ) as t1
-        GROUP BY date
+        group by date
         ) as t1 join 
         (
-        SELECT  date,
-                sum(count(paying_user_id)) OVER (ORDER BY date rows between unbounded preceding and current row) paying_users
-        FROM    (
-                SELECT  min(time :: date) as date,
+        select  date,
+                sum(count(paying_user_id)) over (order by date rows between unbounded preceding and current row) paying_users
+        from    (
+                select  min(time :: date) as date,
                         user_id paying_user_id
-                FROM    user_actions
-                WHERE   order_id not in (SELECT order_id FROM user_actions WHERE action = 'cancel_order')
-                GROUP BY user_id
+                from    user_actions
+                where   order_id not in (select order_id from user_actions where action = 'cancel_order')
+                group by user_id
                 ) as t1
-        GROUP BY date
+        group by date
         ) as t2 using (date) join 
         (
-        SELECT  date,
-                sum(sum(price)) OVER (ORDER BY date) revenue,
-                sum(count(distinct order_id)) OVER (ORDER BY date) orders
-        FROM    (
-                SELECT  creation_time :: date date,
+        select  date,
+                sum(sum(price)) over (order by date) revenue,
+                sum(count(distinct order_id)) over (order by date) orders
+        from    (
+                select  creation_time :: date date,
                         order_id,
                         unnest(product_ids) product_id
-                FROM    orders
-                WHERE   order_id not in (SELECT order_id FROM user_actions WHERE action = 'cancel_order')
-                ) as t1 LEFT JOIN 
+                from    orders
+                where   order_id not in (select order_id from user_actions where action = 'cancel_order')
+                ) as t1 left join 
                 (
-                SELECT  product_id,
+                select  product_id,
                         price
-                FROM    products
+                from    products
                 ) as t2 using (product_id)
-        GROUP BY date
+        group by date
         ) as t3 using (date)
-ORDER BY date
+order by date

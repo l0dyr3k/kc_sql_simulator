@@ -1,42 +1,42 @@
 with daily_report as 
 (
-SELECT  date,
+select  date,
         count(distinct order_id) orders,
         count(distinct user_id) users,
         sum(price) revenue
-FROM    (
-        SELECT  order_id,
+from    (
+        select  order_id,
                 creation_time :: date as date,
                 unnest(product_ids) as product_id
-        FROM    orders
-        WHERE   order_id not in (SELECT order_id FROM user_actions WHERE action = 'cancel_order')
-        ) as a LEFT JOIN 
+        from    orders
+        where   order_id not in (select order_id from user_actions where action = 'cancel_order')
+        ) as a left join 
         (
-        SELECT  product_id,
+        select  product_id,
                 price
-        FROM    products
-        ) as b using (product_id) LEFT JOIN 
+        from    products
+        ) as b using (product_id) left join 
         (
-        SELECT  order_id,
+        select  order_id,
                 user_id
-        FROM    user_actions
+        from    user_actions
         ) as c using (order_id)
-GROUP BY date
+group by date
 ), 
 updated_daily_report as 
 (
-SELECT  *
-FROM    daily_report LEFT JOIN 
+select  *
+from    daily_report left join 
         (
-        SELECT  time :: date as date,
+        select  time :: date as date,
                 count(distinct user_id) all_users
-        FROM    user_actions
-        GROUP BY date
+        from    user_actions
+        group by date
         ) as d using (date)
 )
-SELECT  date,
+select  date,
         round(revenue / all_users, 2) arpu,
         round(revenue / users, 2) arppu,
         round(revenue / orders, 2) aov
-FROM    updated_daily_report
-ORDER BY date
+from    updated_daily_report
+order by date
